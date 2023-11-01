@@ -16,6 +16,7 @@ impl Drop for Data {
 fn get_ref_return_ref<T>(x: &T) -> &T {
     x
 }
+// Compile Error:
 // temporary value dropped while borrowed creates a temporary value which is freed while still in use
 // fn case1() {
 //     let data = get_ref_return_ref(&Data::new(String::from("case2")));
