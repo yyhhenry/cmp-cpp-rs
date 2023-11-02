@@ -32,11 +32,12 @@ void case1() {
 void case2() {
     auto a = Data(1);
     auto b = Data(2);
-    unusual_assignment(a, b);
+    auto c = Data(3);
+    unusual_assignment(a, max_data(b, c));
     std::cout << "a: " << a.value << std::endl;
 
     // Output:
-    // a: 2
+    // a: 3
 }
 
 int main() {

@@ -35,11 +35,12 @@ fn unusual_assignment(a: &mut Data, b: &Data) {
 fn case2() {
     let mut a = Data::new(1);
     let b = Data::new(2);
-    unusual_assignment(&mut a, &b);
+    let c = Data::new(3);
+    unusual_assignment(&mut a, max_data(&b, &c));
     println!("a: {}", a.value);
 
     // Output:
-    // a: 2
+    // a: 3
 }
 
 fn main() {
