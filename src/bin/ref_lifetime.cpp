@@ -8,6 +8,7 @@ struct Data {
     }
     ~Data() {
         std::cout << "Dropping " << value << std::endl;
+        value = "Dropped"s;
     }
 };
 
@@ -24,7 +25,7 @@ void case1() {
     // Output:
     // Creating case1
     // Dropping case1
-    // data: case1
+    // data: Dropped
 }
 void case2() {
     auto origin_data = Data("case2"s);

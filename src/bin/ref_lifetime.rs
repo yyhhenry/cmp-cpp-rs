@@ -10,6 +10,7 @@ impl Data {
 impl Drop for Data {
     fn drop(&mut self) {
         println!("Dropping {}", self.value);
+        self.value = String::from("Dropped");
     }
 }
 
