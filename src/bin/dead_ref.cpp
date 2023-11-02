@@ -3,16 +3,17 @@
 
 void case1() {
     auto arr = std::vector{1, 2, 3};
-    auto &ref = arr[0];
+    auto iter = arr.begin();
     auto cap = arr.capacity();
     for (auto i = arr.size(); i <= cap; ++i) {
         arr.push_back(i);
     }
-    std::cout << "ref: " << ref << std::endl;
-
     // PANIC!!!
+    // This may be not 1 (some times still 1, since the memory is not reused),
+    std::cout << "first: " << *iter << std::endl;
 
-    // Output is not deterministic.
+    // and this is always not 0, because the vector has been reallocated.
+    std::cout << "(arr.begin() - iter): " << (arr.begin() - iter) << std::endl;
 }
 
 void case2() {
@@ -21,11 +22,11 @@ void case2() {
     for (auto i = arr.size(); i <= cap; ++i) {
         arr.push_back(i);
     }
-    auto &ref = arr[0];
-    std::cout << "ref: " << ref << std::endl;
+    auto iter = arr.begin();
+    std::cout << "first: " << *iter << std::endl;
 
     // Output:
-    // ref: 1
+    // iter: 1
 }
 
 int main() {

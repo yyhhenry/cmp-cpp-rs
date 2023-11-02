@@ -3,12 +3,11 @@
 // fn case1() {
 //     let mut arr = vec![1, 2, 3];
 //     let cap = arr.capacity();
-//     let first_ref = &arr[0];
+//     let mut iter = arr.iter();
 //     for _ in arr.len()..=cap {
 //         arr.push(0);
 //     }
-//     println!("first_ref: {}", first_ref);
-//     println!("arr: {:?}", arr);
+//     println!("first: {}", iter.next().unwrap());
 // }
 fn case2() {
     let mut arr = vec![1, 2, 3];
@@ -16,11 +15,11 @@ fn case2() {
     for _ in arr.len()..=cap {
         arr.push(0);
     }
-    let first_ref = &arr[0];
-    println!("first_ref: {}", first_ref);
+    let mut iter = arr.iter();
+    println!("first: {}", iter.next().unwrap());
 
     // Output:
-    // first_ref: 1
+    // first: 1
 }
 fn main() {
     // case1();
