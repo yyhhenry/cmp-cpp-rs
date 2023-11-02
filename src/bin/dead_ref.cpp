@@ -20,7 +20,7 @@ void case2() {
     auto arr = std::vector{1, 2, 3};
     auto cap = arr.capacity();
     for (auto i = arr.size(); i <= cap; ++i) {
-        arr.push_back(i);
+        arr.push_back(0);
     }
     auto iter = arr.begin();
     std::cout << "first: " << *iter << std::endl;
