@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <iostream>
 
 struct Data {
@@ -5,22 +6,20 @@ struct Data {
     Data(int v) : value(v) {}
 };
 
-const Data &max_data(const Data &a, const Data &b) {
-    return a.value > b.value ? a : b;
-}
-
 /**
- * @brief Expected to act like `a.value = b.value;`
+ * @brief Expected to act like `out := max { 0, a, b }` in math.
+ *
  */
-void unusual_assignment(Data &a, const Data &b) {
-    a.value = 0;
-    a.value = b.value;
+void positive_max(Data &out, const Data &a, const Data &b) {
+    out.value = 0;
+    out.value = std::max(out.value, a.value);
+    out.value = std::max(out.value, b.value);
 }
 
 void case1() {
-    auto a = Data(2);
-    auto b = Data(1);
-    unusual_assignment(a, max_data(a, b));
+    auto a = Data(1);
+    const auto b = Data(-1);
+    positive_max(a, b, a);
     std::cout << "a: " << a.value << std::endl;
 
     // Does not act like expected.
@@ -31,13 +30,13 @@ void case1() {
 
 void case2() {
     auto a = Data(1);
-    auto b = Data(2);
-    auto c = Data(3);
-    unusual_assignment(a, max_data(b, c));
+    auto b = Data(-1);
+    auto c = Data(1);
+    positive_max(a, b, c);
     std::cout << "a: " << a.value << std::endl;
 
     // Output:
-    // a: 3
+    // a: 1
 }
 
 int main() {
