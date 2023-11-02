@@ -1,5 +1,5 @@
 struct Data {
-    value: i32,
+    pub value: i32,
 }
 impl Data {
     pub fn new(value: i32) -> Self {
