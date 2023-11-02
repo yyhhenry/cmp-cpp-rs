@@ -6,7 +6,7 @@ void case1() {
     auto iter = arr.begin();
     auto cap = arr.capacity();
     for (auto i = arr.size(); i <= cap; ++i) {
-        arr.push_back(i);
+        arr.push_back(0);
     }
     // PANIC!!!
     // This may be not 1 (some times still 1, since the memory is not reused),
