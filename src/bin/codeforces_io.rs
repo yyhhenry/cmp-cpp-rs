@@ -5,30 +5,24 @@ use std::{
     io::{BufWriter, Stdout, Write},
 };
 
-pub struct IO {
+struct IO {
     buffer: VecDeque<String>,
     out: BufWriter<Stdout>,
 }
 impl IO {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             buffer: VecDeque::new(),
             out: BufWriter::new(std::io::stdout()),
         }
     }
-    pub fn write<T>(&mut self, s: T)
-    where
-        T: std::fmt::Display,
-    {
-        write!(self.out, "{}", s).expect("Failed to write");
-    }
-    pub fn writeln<T>(&mut self, s: T)
+    fn writeln<T>(&mut self, s: T)
     where
         T: std::fmt::Display,
     {
         writeln!(self.out, "{}", s).expect("Failed to write");
     }
-    pub fn next<T>(&mut self) -> T
+    fn next<T>(&mut self) -> T
     where
         T: std::str::FromStr,
         T::Err: std::fmt::Debug,
