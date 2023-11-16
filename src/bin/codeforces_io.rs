@@ -1,5 +1,5 @@
 // https://codeforces.com/gym/103470/problem/M
-// Will get Time Limit Exceeded if using println!() instead of writeln!().
+// Will get Time Limit Exceeded if using println!() or print!() instead of writeln!().
 use std::{
     collections::VecDeque,
     io::{BufWriter, Stdout, Write},
@@ -53,7 +53,7 @@ fn solve(io: &mut IO) {
     }
     let a_max = *a.iter().max().unwrap();
     let a_min = *a.iter().min().unwrap();
-    let a_abs_sum = a.iter().map(|x| x.abs()).sum::<i64>();
+    let a_abs_sum: i64 = a.iter().map(|x| x.abs()).sum();
     if a_max < 0 {
         io.writeln(a_abs_sum - a_max.abs() * 2);
         return;
