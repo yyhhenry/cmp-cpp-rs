@@ -1,5 +1,5 @@
 // https://codeforces.com/gym/103470/problem/M
-
+// Will get Time Limit Exceeded if using println!() instead of writeln!().
 use std::{
     collections::VecDeque,
     io::{BufWriter, Stdout, Write},
