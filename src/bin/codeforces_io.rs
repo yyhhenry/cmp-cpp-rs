@@ -16,7 +16,7 @@ impl IO {
             out: BufWriter::new(std::io::stdout()),
         }
     }
-    fn writeln<T>(&mut self, s: T)
+    fn println<T>(&mut self, s: T)
     where
         T: std::fmt::Display,
     {
@@ -42,21 +42,21 @@ fn solve(io: &mut IO) {
     let n: usize = io.next();
     let a: Vec<i64> = (0..n).map(|_| io.next()).collect();
     if n == 1 {
-        io.writeln(a[0]);
+        io.println(a[0]);
         return;
     }
     let a_max = *a.iter().max().unwrap();
     let a_min = *a.iter().min().unwrap();
     let a_abs_sum: i64 = a.iter().map(|x| x.abs()).sum();
     if a_max < 0 {
-        io.writeln(a_abs_sum - a_max.abs() * 2);
+        io.println(a_abs_sum - a_max.abs() * 2);
         return;
     }
     if a_min > 0 {
-        io.writeln(a_abs_sum - a_min * 2);
+        io.println(a_abs_sum - a_min * 2);
         return;
     }
-    io.writeln(a_abs_sum);
+    io.println(a_abs_sum);
 }
 
 fn main() {
