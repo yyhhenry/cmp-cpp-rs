@@ -54,7 +54,7 @@ where
 #[derive(Debug)]
 pub enum PersistentErr {
     Empty,
-    NotCommitted,
+    Uncommitted,
 }
 pub struct PersistentStruct<Source, Operation>
 where
@@ -88,9 +88,13 @@ where
         self.current = PersistentOperations::new();
         self.reverted.clear();
     }
+    pub fn clear_uncommitted(&mut self) {
+        self.current.revert_all(&mut self.source);
+        self.current = PersistentOperations::new();
+    }
     pub fn redo(&mut self) -> Result<(), PersistentErr> {
         if self.current.len() > 0 {
-            return Err(PersistentErr::NotCommitted);
+            return Err(PersistentErr::Uncommitted);
         }
         let operations = self.reverted.pop().ok_or(PersistentErr::Empty)?;
         operations.apply_all(&mut self.source);
@@ -99,7 +103,7 @@ where
     }
     pub fn undo(&mut self) -> Result<(), PersistentErr> {
         if self.current.len() > 0 {
-            return Err(PersistentErr::NotCommitted);
+            return Err(PersistentErr::Uncommitted);
         }
         let operations = self.applied.pop().ok_or(PersistentErr::Empty)?;
         operations.revert_all(&mut self.source);
@@ -136,17 +140,13 @@ where
 }
 fn main() {
     let mut map = PersistentStruct::from(HashMap::new());
-    println!("{:?}", map.as_ref());
     map.add_and_apply(PersistentMapOperation::Insert(1, 2));
-    map.commit();
-    println!("{:?}", map.as_ref());
+    println!("map: {:?}", map.as_ref());
     map.add_and_apply(PersistentMapOperation::Insert(2, 3));
     map.commit();
-    println!("{:?}", map.as_ref());
+    println!("map: {:?}", map.as_ref());
     map.undo().unwrap();
-    println!("{:?}", map.as_ref());
-    map.undo().unwrap();
-    println!("{:?}", map.as_ref());
+    println!("map: {:?}", map.as_ref());
     map.redo().unwrap();
-    println!("{:?}", map.as_ref());
+    println!("map: {:?}", map.as_ref());
 }
