@@ -1,51 +1,40 @@
 // A real-world example for using traits.
-use std::{
-    collections::{BTreeMap, HashMap},
-    marker::PhantomData,
-};
+use std::collections::HashSet;
 
-pub trait PersistentOperation<Source> {
-    fn apply_on(&self, source: &mut Source);
-    fn revert_on(&self, source: &mut Source);
+pub trait PersistentOperation {
+    type Source;
+    fn apply_on(&self, source: &mut Self::Source);
+    fn revert_on(&self, source: &mut Self::Source);
 }
-struct PersistentOperations<Source, Operation>
+#[derive(Debug, Clone)]
+struct PersistentOperations<Operation>
 where
-    Operation: PersistentOperation<Source> + Clone,
+    Operation: PersistentOperation + Clone,
 {
-    _source: PhantomData<Source>,
     operations: Vec<Operation>,
 }
-impl<Source, Operation> PersistentOperations<Source, Operation>
+impl<Operation> PersistentOperations<Operation>
 where
-    Operation: PersistentOperation<Source> + Clone,
+    Operation: PersistentOperation + Clone,
 {
     pub fn new() -> Self {
-        Self {
-            _source: PhantomData,
-            operations: vec![],
-        }
+        Self { operations: vec![] }
     }
     pub fn len(&self) -> usize {
         self.operations.len()
     }
-    pub fn add_and_apply(&mut self, operation: Operation, source: &mut Source) {
+    pub fn add_and_apply(&mut self, operation: Operation, source: &mut Operation::Source) {
         operation.apply_on(source);
         self.operations.push(operation);
     }
-    pub fn apply_all(&self, source: &mut Source) {
+    pub fn apply_all(&self, source: &mut Operation::Source) {
         for operation in &self.operations {
             operation.apply_on(source);
         }
     }
-    pub fn revert_all(&self, source: &mut Source) {
+    pub fn revert_all(&self, source: &mut Operation::Source) {
         for operation in self.operations.iter().rev() {
             operation.revert_on(source);
-        }
-    }
-    pub fn drain_all(&mut self) -> Self {
-        Self {
-            _source: PhantomData,
-            operations: self.operations.drain(..).collect(),
         }
     }
 }
@@ -56,18 +45,26 @@ pub enum PersistentErr {
 }
 pub struct PersistentStruct<Source, Operation>
 where
-    Operation: PersistentOperation<Source> + Clone,
+    Operation: PersistentOperation + Clone,
 {
     source: Source,
-    current: PersistentOperations<Source, Operation>,
-    applied: Vec<PersistentOperations<Source, Operation>>,
-    reverted: Vec<PersistentOperations<Source, Operation>>,
+    current: PersistentOperations<Operation>,
+    applied: Vec<PersistentOperations<Operation>>,
+    reverted: Vec<PersistentOperations<Operation>>,
 }
-impl<Source, Operation> PersistentStruct<Source, Operation>
+impl<Source, Operation> AsRef<Source> for PersistentStruct<Source, Operation>
 where
-    Operation: PersistentOperation<Source> + Clone,
+    Operation: PersistentOperation + Clone,
 {
-    pub fn from(source: Source) -> Self {
+    fn as_ref(&self) -> &Source {
+        &self.source
+    }
+}
+impl<Source, Operation> From<Source> for PersistentStruct<Source, Operation>
+where
+    Operation: PersistentOperation + Clone,
+{
+    fn from(source: Source) -> Self {
         Self {
             source,
             current: PersistentOperations::new(),
@@ -75,14 +72,17 @@ where
             reverted: vec![],
         }
     }
-    pub fn as_ref(&self) -> &Source {
-        &self.source
-    }
+}
+impl<Source, Operation> PersistentStruct<Source, Operation>
+where
+    Operation: PersistentOperation<Source = Source> + Clone,
+{
     pub fn add_and_apply(&mut self, operation: Operation) {
         self.current.add_and_apply(operation, &mut self.source);
     }
     pub fn commit(&mut self) {
-        self.applied.push(self.current.drain_all());
+        self.applied.push(self.current.clone());
+        self.current = PersistentOperations::new();
         self.reverted.clear();
     }
     pub fn clear_uncommitted(&mut self) {
@@ -109,68 +109,55 @@ where
     }
 }
 #[derive(Clone)]
-pub enum PersistentMapOperation<K, V>
+pub enum PersistentSetOperation<T>
 where
-    K: Eq + std::hash::Hash + Clone,
-    V: Clone,
+    T: Eq + std::hash::Hash + Clone,
 {
-    Insert(K, V),
-    Delete(K, V),
+    Insert(T),
+    Delete(T),
 }
-impl<K, V> PersistentOperation<HashMap<K, V>> for PersistentMapOperation<K, V>
+impl<T> PersistentOperation for PersistentSetOperation<T>
 where
-    K: Eq + std::hash::Hash + Clone,
-    V: Clone,
+    T: Eq + std::hash::Hash + Clone,
 {
-    fn apply_on(&self, source: &mut HashMap<K, V>) {
+    type Source = HashSet<T>;
+    fn apply_on(&self, source: &mut Self::Source) {
         match self {
-            PersistentMapOperation::Insert(key, value) => source.insert(key.clone(), value.clone()),
-            PersistentMapOperation::Delete(key, _) => source.remove(key),
+            PersistentSetOperation::Insert(value) => source.insert(value.clone()),
+            PersistentSetOperation::Delete(value) => source.remove(value),
         };
     }
-    fn revert_on(&self, source: &mut HashMap<K, V>) {
+    fn revert_on(&self, source: &mut Self::Source) {
         match self {
-            PersistentMapOperation::Insert(key, _) => source.remove(key),
-            PersistentMapOperation::Delete(key, value) => source.insert(key.clone(), value.clone()),
-        };
-    }
-}
-impl<K, V> PersistentOperation<BTreeMap<K, V>> for PersistentMapOperation<K, V>
-where
-    K: Eq + std::hash::Hash + Clone + Ord,
-    V: Clone,
-{
-    fn apply_on(&self, source: &mut BTreeMap<K, V>) {
-        match self {
-            PersistentMapOperation::Insert(key, value) => source.insert(key.clone(), value.clone()),
-            PersistentMapOperation::Delete(key, _) => source.remove(key),
-        };
-    }
-    fn revert_on(&self, source: &mut BTreeMap<K, V>) {
-        match self {
-            PersistentMapOperation::Insert(key, _) => source.remove(key),
-            PersistentMapOperation::Delete(key, value) => source.insert(key.clone(), value.clone()),
+            PersistentSetOperation::Insert(value) => source.remove(value),
+            PersistentSetOperation::Delete(value) => source.insert(value.clone()),
         };
     }
 }
 fn main() {
-    let mut hash_map = PersistentStruct::from(HashMap::new());
-    hash_map.add_and_apply(PersistentMapOperation::Insert(1, 2));
-    println!("hash_map: {:?}", hash_map.as_ref());
-    hash_map.add_and_apply(PersistentMapOperation::Insert(2, 3));
-    hash_map.commit();
-    println!("hash_map: {:?}", hash_map.as_ref());
-    hash_map.undo().unwrap();
-    println!("hash_map: {:?}", hash_map.as_ref());
-    hash_map.redo().unwrap();
-    println!("hash_map: {:?}", hash_map.as_ref());
+    let mut set = PersistentStruct::from(HashSet::new());
 
-    let mut b_tree_map = PersistentStruct::from(BTreeMap::new());
-    b_tree_map.add_and_apply(PersistentMapOperation::Insert(
-        "key".to_owned(),
-        "value".to_owned(),
-    ));
-    println!("b_tree_map: {:?}", b_tree_map.as_ref());
-    b_tree_map.clear_uncommitted();
-    println!("b_tree_map: {:?}", b_tree_map.as_ref());
+    set.add_and_apply(PersistentSetOperation::Insert(1));
+    // Apply at once, not until commit.
+    assert_eq!(set.as_ref(), &HashSet::from([1]));
+    set.add_and_apply(PersistentSetOperation::Insert(2));
+    set.commit();
+    // Save the current state using commit.
+    assert_eq!(set.as_ref(), &HashSet::from([1, 2]));
+
+    set.undo().unwrap();
+    // Back to the previous state.
+    assert_eq!(set.as_ref(), &HashSet::from([]));
+
+    set.add_and_apply(PersistentSetOperation::Insert(3));
+    // Apply at once.
+    assert_eq!(set.as_ref(), &HashSet::from([3]));
+    set.clear_uncommitted();
+    // Then, clear the uncommitted operations.
+    assert_eq!(set.as_ref(), &HashSet::from([]));
+    set.redo().unwrap();
+    // But the uncommitted operations will not influence the redo.
+    assert_eq!(set.as_ref(), &HashSet::from([1, 2]));
+
+    println!("All tests passed!")
 }
