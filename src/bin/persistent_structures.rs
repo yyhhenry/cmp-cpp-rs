@@ -1,5 +1,8 @@
 // A real-world example for using traits.
-use std::{collections::HashMap, marker::PhantomData};
+use std::{
+    collections::{BTreeMap, HashMap},
+    marker::PhantomData,
+};
 
 pub trait PersistentOperation<Source> {
     fn apply_on(&self, source: &mut Source);
@@ -11,17 +14,6 @@ where
 {
     _source: PhantomData<Source>,
     operations: Vec<Operation>,
-}
-impl<Source, Operation> Clone for PersistentOperations<Source, Operation>
-where
-    Operation: PersistentOperation<Source> + Clone,
-{
-    fn clone(&self) -> Self {
-        Self {
-            _source: PhantomData,
-            operations: self.operations.clone(),
-        }
-    }
 }
 impl<Source, Operation> PersistentOperations<Source, Operation>
 where
@@ -48,6 +40,12 @@ where
     pub fn revert_all(&self, source: &mut Source) {
         for operation in self.operations.iter().rev() {
             operation.revert_on(source);
+        }
+    }
+    pub fn drain_all(&mut self) -> Self {
+        Self {
+            _source: PhantomData,
+            operations: self.operations.drain(..).collect(),
         }
     }
 }
@@ -84,8 +82,7 @@ where
         self.current.add_and_apply(operation, &mut self.source);
     }
     pub fn commit(&mut self) {
-        self.applied.push(self.current.clone());
-        self.current = PersistentOperations::new();
+        self.applied.push(self.current.drain_all());
         self.reverted.clear();
     }
     pub fn clear_uncommitted(&mut self) {
@@ -138,15 +135,42 @@ where
         };
     }
 }
+impl<K, V> PersistentOperation<BTreeMap<K, V>> for PersistentMapOperation<K, V>
+where
+    K: Eq + std::hash::Hash + Clone + Ord,
+    V: Clone,
+{
+    fn apply_on(&self, source: &mut BTreeMap<K, V>) {
+        match self {
+            PersistentMapOperation::Insert(key, value) => source.insert(key.clone(), value.clone()),
+            PersistentMapOperation::Delete(key, _) => source.remove(key),
+        };
+    }
+    fn revert_on(&self, source: &mut BTreeMap<K, V>) {
+        match self {
+            PersistentMapOperation::Insert(key, _) => source.remove(key),
+            PersistentMapOperation::Delete(key, value) => source.insert(key.clone(), value.clone()),
+        };
+    }
+}
 fn main() {
-    let mut map = PersistentStruct::from(HashMap::new());
-    map.add_and_apply(PersistentMapOperation::Insert(1, 2));
-    println!("map: {:?}", map.as_ref());
-    map.add_and_apply(PersistentMapOperation::Insert(2, 3));
-    map.commit();
-    println!("map: {:?}", map.as_ref());
-    map.undo().unwrap();
-    println!("map: {:?}", map.as_ref());
-    map.redo().unwrap();
-    println!("map: {:?}", map.as_ref());
+    let mut hash_map = PersistentStruct::from(HashMap::new());
+    hash_map.add_and_apply(PersistentMapOperation::Insert(1, 2));
+    println!("hash_map: {:?}", hash_map.as_ref());
+    hash_map.add_and_apply(PersistentMapOperation::Insert(2, 3));
+    hash_map.commit();
+    println!("hash_map: {:?}", hash_map.as_ref());
+    hash_map.undo().unwrap();
+    println!("hash_map: {:?}", hash_map.as_ref());
+    hash_map.redo().unwrap();
+    println!("hash_map: {:?}", hash_map.as_ref());
+
+    let mut b_tree_map = PersistentStruct::from(BTreeMap::new());
+    b_tree_map.add_and_apply(PersistentMapOperation::Insert(
+        "key".to_owned(),
+        "value".to_owned(),
+    ));
+    println!("b_tree_map: {:?}", b_tree_map.as_ref());
+    b_tree_map.clear_uncommitted();
+    println!("b_tree_map: {:?}", b_tree_map.as_ref());
 }
